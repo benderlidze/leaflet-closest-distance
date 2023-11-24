@@ -33,7 +33,6 @@
             right: 20px;
             position: absolute;
             z-index: 999;
-
         }
     </style>
 
@@ -50,10 +49,11 @@
 
         let main = {}
         const map = L.map('map').setView({ lat: -15.305379530436726, lng: -53.45947265625001 }, 5);
-        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
 
+        L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(map);
 
         Promise.all([
             fetch('data/CPE.geojson').then(res => res.json()),
@@ -172,7 +172,7 @@
                 console.log('latitude', latitude);
                 console.log('longitude', longitude);
 
-                map.setView([latitude, longitude ], 15);
+                map.setView([latitude, longitude], 12);
 
             });
         }
