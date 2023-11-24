@@ -29,14 +29,19 @@
         }
 
         .search-tab {
-            top: 20px;
-            right: 20px;
+            top: 12px;
+            left: 50px;
             position: absolute;
             z-index: 999;
         }
+
+        #autocomplete {
+            padding: 10px;
+            width: 300px;
+            font-size: 16px;
+
+        }
     </style>
-
-
 </head>
 
 <body>
@@ -48,12 +53,23 @@
     <script>
 
         let main = {}
-        const map = L.map('map').setView({ lat: -15.305379530436726, lng: -53.45947265625001 }, 5);
+        const baseMaps = {
+            "Google": L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            }),
+            "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 20,
+            }),
+        };
+        const map = L.map('map', {
+            layers: [baseMaps.Google], // Set the default layer here
+        }).setView({ lat: -15.305379530436726, lng: -53.45947265625001 }, 5);
+        //move to left 
 
-        L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        }).addTo(map);
+
+        L.control.layers(baseMaps).addTo(map);
+
 
         Promise.all([
             fetch('data/CPE.geojson').then(res => res.json()),
@@ -104,9 +120,10 @@
                 .setLatLng(e.latlng)
                 .setContent(`
                     <b>Estações NTRIP mais próximas:</b>
-                    <div>IBGE: ${IBGEMin}</div>
-                    <div>GEOPLUS: ${GEOPLUSMin}</div>
-                    <div>CPE: ${CPEMin}</div>
+                    <div>IBGE: ${IBGEMin.name} ${IBGEMin.dist.toFixed(2)}</div>
+                    <div>CPE: ${CPEMin.name} ${CPEMin.dist.toFixed(2)}</div>
+                    <div>GEOPLUS: ${GEOPLUSMin.name} ${GEOPLUSMin.dist.toFixed(2)}</div>
+                    
                     <div>${e.latlng.toString()}</div>
                 `)
                 .openOn(map);
@@ -117,10 +134,14 @@
             const from = turf.point([lat, lng]);
             const distances = data.features.map(function (point) {
                 const [lng, lat] = point.geometry.coordinates;
-                return turf.distance(from, turf.point([lat, lng]));
-            });
-            const min = Math.min(...distances);
-            return min.toFixed(2) + " km";
+                return {
+                    name: point.properties.Name,
+                    dist: turf.distance(from, turf.point([lat, lng]))
+                }
+            })
+                .sort((a, b) => a.dist - b.dist)
+            console.log('distances', distances);
+            return distances[0]
         }
 
         map.on('click', onMapClick);
