@@ -47,7 +47,7 @@
 <body>
 
     <div class="search-tab">
-        <input type="text" id="autocomplete" placeholder="Enter a location">
+        <input type="text" id="autocomplete" placeholder="Pesquisar...">
     </div>
     <div id="map" style="width: 100%; height: 100vh"></div>
     <script>
@@ -63,7 +63,7 @@
             }),
         };
         const map = L.map('map', {
-            layers: [baseMaps.Google], // Set the default layer here
+            layers: [baseMaps.OpenStreetMap], // Set the default layer here
         }).setView({ lat: -15.305379530436726, lng: -53.45947265625001 }, 5);
         //move to left 
 
@@ -109,13 +109,10 @@
             .setLatLng([51.513, -0.09])
 
         function onMapClick(e) {
-
             const { lat, lng } = e.latlng;
-
             const CPEMin = findNearest(lat, lng, main.CPE);
             const IBGEMin = findNearest(lat, lng, main.IBGE);
             const GEOPLUSMin = findNearest(lat, lng, main.GEOPLUS);
-
             popup
                 .setLatLng(e.latlng)
                 .setContent(`
@@ -123,11 +120,10 @@
                     <div>IBGE: ${IBGEMin.name} ${IBGEMin.dist.toFixed(2)}</div>
                     <div>CPE: ${CPEMin.name} ${CPEMin.dist.toFixed(2)}</div>
                     <div>GEOPLUS: ${GEOPLUSMin.name} ${GEOPLUSMin.dist.toFixed(2)}</div>
-                    
+
                     <div>${e.latlng.toString()}</div>
                 `)
                 .openOn(map);
-
         }
 
         const findNearest = (lat, lng, data) => {
