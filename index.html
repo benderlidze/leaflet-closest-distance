@@ -27,6 +27,14 @@
             font-size: 16px;
             font-weight: bold;
         }
+
+        .search-tab {
+            top: 20px;
+            right: 20px;
+            position: absolute;
+            z-index: 999;
+
+        }
     </style>
 
 
@@ -34,8 +42,9 @@
 
 <body>
 
-
-
+    <div class="search-tab">
+        <input type="text" id="autocomplete" placeholder="Enter a location">
+    </div>
     <div id="map" style="width: 100%; height: 100vh"></div>
     <script>
 
@@ -49,7 +58,8 @@
         Promise.all([
             fetch('data/CPE.geojson').then(res => res.json()),
             fetch('data/IBGE.geojson').then(res => res.json()),
-        ]).then(([cpe, ibge]) => {
+            fetch('data/GEOPLUS.geojson').then(res => res.json()),
+        ]).then(([cpe, ibge, geoplus]) => {
 
             cpe.features.forEach(function (point) {
                 const [lng, lat] = point.geometry.coordinates;
@@ -65,12 +75,18 @@
                 });
             });
 
+            geoplus.features.forEach(function (point) {
+                const [lng, lat] = point.geometry.coordinates;
+                circleWithText(lat, lng, `GEOPLUS - ${point.properties.Name}`, {
+                    color: '#0af9',
+                });
+            });
+
             main = {
                 CPE: cpe,
-                IBGE: ibge
+                IBGE: ibge,
+                GEOPLUS: geoplus
             }
-
-
         })
 
         const popup = L.popup()
@@ -82,13 +98,16 @@
 
             const CPEMin = findNearest(lat, lng, main.CPE);
             const IBGEMin = findNearest(lat, lng, main.IBGE);
+            const GEOPLUSMin = findNearest(lat, lng, main.GEOPLUS);
 
             popup
                 .setLatLng(e.latlng)
                 .setContent(`
-                    <div>${e.latlng.toString()}</div>
-                    <div>CPE: ${CPEMin}</div>
+                    <b>Estações NTRIP mais próximas:</b>
                     <div>IBGE: ${IBGEMin}</div>
+                    <div>GEOPLUS: ${GEOPLUSMin}</div>
+                    <div>CPE: ${CPEMin}</div>
+                    <div>${e.latlng.toString()}</div>
                 `)
                 .openOn(map);
 
@@ -130,10 +149,38 @@
             return marker;
         }
 
+        function initAutocomplete() {
+            // Create an Autocomplete object
+            const autocomplete = new google.maps.places.Autocomplete(
+                document.getElementById('autocomplete'),
+                { types: ['geocode'] }
+            );
+
+            // Listen for the event when a place is selected
+            autocomplete.addListener('place_changed', function () {
+                const place = autocomplete.getPlace();
+                console.log('place', place);
+
+                if (!place.geometry) {
+                    console.log('error');
+                    return;
+                }
+
+                const { lat, lng } = place.geometry.location;
+                const latitude = lat();
+                const longitude = lng();
+                console.log('latitude', latitude);
+                console.log('longitude', longitude);
+
+                map.setView([latitude, longitude ], 15);
+
+            });
+        }
+
     </script>
 
-
-
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCrzxf4lU8rcsnIJdNuJiNjcBcruY0hyxY&libraries=places&callback=initAutocomplete"></script>
 </body>
 
 </html>
