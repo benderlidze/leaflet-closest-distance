@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Quick Start - Leaflet</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .label {
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+
+
+</head>
+
+<body>
+
+
+
+    <div id="map" style="width: 100%; height: 100vh"></div>
+    <script>
+
+        let main = {}
+        const map = L.map('map').setView({ lat: -15.305379530436726, lng: -53.45947265625001 }, 5);
+        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+
+        Promise.all([
+            fetch('data/CPE.geojson').then(res => res.json()),
+            fetch('data/IBGE.geojson').then(res => res.json()),
+        ]).then(([cpe, ibge]) => {
+
+            cpe.features.forEach(function (point) {
+                const [lng, lat] = point.geometry.coordinates;
+                circleWithText(lat, lng, `CPE - ${point.properties.Name}`, {
+                    color: '#970a94',
+                });
+            });
+
+            ibge.features.forEach(function (point) {
+                const [lng, lat] = point.geometry.coordinates;
+                circleWithText(lat, lng, `IBGE - ${point.properties.Name}`, {
+                    color: '#000af9',
+                });
+            });
+
+            main = {
+                CPE: cpe,
+                IBGE: ibge
+            }
+
+
+        })
+
+        const popup = L.popup()
+            .setLatLng([51.513, -0.09])
+
+        function onMapClick(e) {
+
+            const { lat, lng } = e.latlng;
+
+            const CPEMin = findNearest(lat, lng, main.CPE);
+            const IBGEMin = findNearest(lat, lng, main.IBGE);
+
+            popup
+                .setLatLng(e.latlng)
+                .setContent(`
+                    <div>${e.latlng.toString()}</div>
+                    <div>CPE: ${CPEMin}</div>
+                    <div>IBGE: ${IBGEMin}</div>
+                `)
+                .openOn(map);
+
+        }
+
+        const findNearest = (lat, lng, data) => {
+            const from = turf.point([lat, lng]);
+            const distances = data.features.map(function (point) {
+                const [lng, lat] = point.geometry.coordinates;
+                return turf.distance(from, turf.point([lat, lng]));
+            });
+            const min = Math.min(...distances);
+            return min.toFixed(2) + " km";
+        }
+
+        map.on('click', onMapClick);
+
+
+        function circleWithText(lat, lng, txt, circleOptions) {
+
+            const label = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'label',
+                    html: `<div style="text-wrap:nowrap; color: ${circleOptions.color}">${txt}</div>`,
+                    iconAnchor: [45, 30] // Adjust these values based on your icon size
+                })
+            }).addTo(map);
+            const pointOptions = {
+                radius: 5,
+                stroke: false,
+                color: '#E65217',
+                weight: 1,
+                opacity: 1,
+                fill: true,
+                fillOpacity: 1,
+                ...circleOptions
+            }
+            const marker = L.circleMarker([lat, lng], pointOptions).addTo(map);
+            return marker;
+        }
+
+    </script>
+
+
+
+</body>
+
+</html>
