@@ -127,12 +127,12 @@
         }
 
         const findNearest = (lat, lng, data) => {
-            const from = turf.point([lat, lng]);
+            const from = turf.point([lng, lat]);
             const distances = data.features.map(function (point) {
                 const [lng, lat] = point.geometry.coordinates;
                 return {
                     name: point.properties.Name,
-                    dist: turf.distance(from, turf.point([lat, lng]))
+                    dist: turf.distance(from, turf.point([lng, lat]))
                 }
             })
                 .sort((a, b) => a.dist - b.dist)
